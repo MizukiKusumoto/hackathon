@@ -4,9 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/oklog/ulid"
 	"log"
-	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,17 +14,12 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-type UserResForHTTPGet struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
-	Age  int    `json:"age"`
-}
-type UserResForHTTPPost struct {
-	Name string `json:"name"`
-	Age  int    `json:"age"`
-}
-type Id struct {
-	Id string `json:"id"`
+type Message struct {
+	ID         string    `json:"id"`
+	Content    string    `json:"content"`
+	ChannelID  string    `json:"channel_id"`
+	CreatedAt  time.Time `json:"created_at"`
+	ModifiedAt time.Time `json:"modified_at"`
 }
 
 var db *sql.DB
@@ -49,113 +42,137 @@ func init() {
 	db = _db
 }
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodPost:
-		tx, err := db.Begin()
-		if err != nil {
-			log.Printf("fail: db.Begin, %v\n", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		var u UserResForHTTPPost
-		err = json.NewDecoder(r.Body).Decode(&u)
-		if err != nil {
-			log.Printf("fail: json.NewDecoder, %v\n", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		if u.Name == "" {
-			log.Println("fail: name is empty")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		if len(u.Name) > 50 {
-			log.Println("fail: name is too long")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		if u.Age < 20 || u.Age > 80 {
-			log.Println("fail: age is not proper")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		t := time.Now()
-		entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
-		id := ulid.MustNew(ulid.Timestamp(t), entropy).String()
-		_, err = tx.Exec("INSERT INTO user (id, name, age) VALUES (?, ?, ?)", id, u.Name, u.Age)
-		if err != nil {
-			err2 := tx.Rollback()
-			if err2 != nil {
-				log.Printf("fail: tx.Rollback, %v\n", err2)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			log.Printf("fail: tx.Exec, %v\n", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		var idC Id
-		idC.Id = id
-		bytes, err := json.Marshal(idC)
-		if err != nil {
-			log.Printf("fail: json.Marshal, %v\n", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(bytes)
-		if err := tx.Commit(); err != nil {
-			log.Printf("fail: tx.Commit, %v\n", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-	case http.MethodGet:
-		name := r.URL.Query().Get("name")
-		if name == "" {
-			log.Println("fail: name is empty")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		rows, err := db.Query("SELECT id, name, age FROM user WHERE name = ?", name)
-		if err != nil {
-			log.Printf("fail: db.Query, %v\n", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		users := make([]UserResForHTTPGet, 0)
-		for rows.Next() {
-			var u UserResForHTTPGet
-			if err := rows.Scan(&u.Id, &u.Name, &u.Age); err != nil {
-				log.Printf("fail: rows.Scan, %v\n", err)
-
-				if err := rows.Close(); err != nil { // 500を返して終了するが、その前にrowsのClose処理が必要
-					log.Printf("fail: rows.Close(), %v\n", err)
-				}
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			users = append(users, u)
-		}
-		bytes, err := json.Marshal(users)
-		if err != nil {
-			log.Printf("fail: json.Marshal, %v\n", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(bytes)
-
-	default:
-		log.Printf("fail: HTTP Method is %s\n", r.Method)
+func postMessage(w http.ResponseWriter, r *http.Request) {
+	var message Message
+	err := json.NewDecoder(r.Body).Decode(&message)
+	if err != nil {
+		log.Printf("fail: json.NewDecoder, %v\n", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	if message.Content == "" {
+		log.Println("fail: content is empty")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	t := time.Now()
+	message.ID = generateID()
+	message.CreatedAt = t
+	message.ModifiedAt = t
+
+	_, err = db.Exec("INSERT INTO message (id, content, channel_id, created_at, modified_at) VALUES (?, ?, ?, ?, ?)",
+		message.ID, message.Content, message.ChannelID, message.CreatedAt, message.ModifiedAt)
+	if err != nil {
+		log.Printf("fail: db.Exec, %v\n", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func getMessages(w http.ResponseWriter, r *http.Request) {
+	channelID := r.URL.Query().Get("channel_id")
+	if channelID == "" {
+		log.Println("fail: channel_id is empty")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	rows, err := db.Query("SELECT id, content, channel_id, created_at, modified_at FROM message WHERE channel_id = ?", channelID)
+	if err != nil {
+		log.Printf("fail: db.Query, %v\n", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	messages := make([]Message, 0)
+	for rows.Next() {
+		var message Message
+		if err := rows.Scan(&message.ID, &message.Content, &message.ChannelID, &message.CreatedAt, &message.ModifiedAt); err != nil {
+			log.Printf("fail: rows.Scan, %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		messages = append(messages, message)
+	}
+
+	bytes, err := json.Marshal(messages)
+	if err != nil {
+		log.Printf("fail: json.Marshal, %v\n", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(bytes)
+}
+
+func editMessage(w http.ResponseWriter, r *http.Request) {
+	var message Message
+	err := json.NewDecoder(r.Body).Decode(&message)
+	if err != nil {
+		log.Printf("fail: json.NewDecoder, %v\n", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if message.ID == "" {
+		log.Println("fail: id is empty")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if message.Content == "" {
+		log.Println("fail: content is empty")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	message.ModifiedAt = time.Now()
+
+	_, err = db.Exec("UPDATE message SET content = ?, modified_at = ? WHERE id = ?",
+		message.Content, message.ModifiedAt, message.ID)
+	if err != nil {
+		log.Printf("fail: db.Exec, %v\n", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func deleteMessage(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		log.Println("fail: id is empty")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	_, err := db.Exec("DELETE FROM message WHERE id = ?", id)
+	if err != nil {
+		log.Printf("fail: db.Exec, %v\n", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func generateID() string {
+	// ID生成のロジックを実装する（ULIDなどの一意のIDを生成する方法を使用する）
+	return ""
 }
 
 func main() {
-	http.HandleFunc("/user", handler)
+	http.HandleFunc("/message", postMessage)
+	http.HandleFunc("/messages", getMessages)
+	http.HandleFunc("/message/edit", editMessage)
+	http.HandleFunc("/message/delete", deleteMessage)
 	closeDBWithSysCall()
 	log.Println("Listening...")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
