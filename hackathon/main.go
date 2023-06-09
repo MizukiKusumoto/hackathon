@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/oklog/ulid"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
@@ -43,6 +45,10 @@ func init() {
 }
 
 func postMessage(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
 	var message Message
 	err := json.NewDecoder(r.Body).Decode(&message)
 	if err != nil {
@@ -74,6 +80,10 @@ func postMessage(w http.ResponseWriter, r *http.Request) {
 }
 
 func getMessages(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
 	channelID := r.URL.Query().Get("channel_id")
 	if channelID == "" {
 		log.Println("fail: channel_id is empty")
@@ -112,6 +122,10 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 }
 
 func editMessage(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
 	var message Message
 	err := json.NewDecoder(r.Body).Decode(&message)
 	if err != nil {
@@ -146,6 +160,10 @@ func editMessage(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteMessage(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	
 	id := r.URL.Query().Get("id")
 	if id == "" {
 		log.Println("fail: id is empty")
@@ -164,8 +182,10 @@ func deleteMessage(w http.ResponseWriter, r *http.Request) {
 }
 
 func generateID() string {
-	// ID生成のロジックを実装する（ULIDなどの一意のIDを生成する方法を使用する）
-	return ""
+	t := time.Now()
+	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
+	id := ulid.MustNew(ulid.Timestamp(t), entropy).String()
+	return id
 }
 
 func main() {
