@@ -91,6 +91,7 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Println("ok1")
 	rows, err := db.Query("SELECT id, content, channel_id, created_at, modified_at FROM message WHERE channel_id = ?", channelID)
 	if err != nil {
 		log.Printf("fail: db.Query, %v\n", err)
@@ -99,6 +100,7 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
+	log.Println("ok2")
 	messages := make([]Message, 0)
 	for rows.Next() {
 		var message Message
@@ -110,6 +112,7 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 		messages = append(messages, message)
 	}
 
+	log.Println("ok3")
 	bytes, err := json.Marshal(messages)
 	if err != nil {
 		log.Printf("fail: json.Marshal, %v\n", err)
@@ -163,7 +166,7 @@ func deleteMessage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	
+
 	id := r.URL.Query().Get("id")
 	if id == "" {
 		log.Println("fail: id is empty")
