@@ -91,7 +91,6 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println("ok1")
 	rows, err := db.Query("SELECT id, content, channel_id, created_at, modified_at FROM message WHERE channel_id = ?", channelID)
 	if err != nil {
 		log.Printf("fail: db.Query, %v\n", err)
@@ -100,15 +99,17 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	log.Println("ok2")
 	messages := make([]Message, 0)
 	for rows.Next() {
 		var message Message
-		if err := rows.Scan(&message.ID, &message.Content, &message.ChannelID, &message.CreatedAt, &message.ModifiedAt); err != nil {
+		var createdAt time.Time
+		var modifiedAt time.Time
+		if err := rows.Scan(&message.ID, &message.Content, &message.ChannelID, &createdAt, &modifiedAt); err != nil {
 			log.Printf("fail: rows.Scan, %v\n", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+
 		messages = append(messages, message)
 	}
 
