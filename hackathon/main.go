@@ -134,7 +134,7 @@ func editMessage(w http.ResponseWriter, r *http.Request) {
 	case http.MethodOptions:
 		w.Header()
 
-	case http.MethodPost:
+	case http.MethodPut:
 		var message Message
 		err := json.NewDecoder(r.Body).Decode(&message)
 		if err != nil {
