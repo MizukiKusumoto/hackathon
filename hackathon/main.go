@@ -114,7 +114,6 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 		messages = append(messages, message)
 	}
 
-	log.Println("ok3")
 	bytes, err := json.Marshal(messages)
 	if err != nil {
 		log.Printf("fail: json.Marshal, %v\n", err)
@@ -128,7 +127,7 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 
 func editMessage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, PUT, POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
 	var message Message
