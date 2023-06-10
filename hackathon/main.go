@@ -102,13 +102,14 @@ func getMessages(w http.ResponseWriter, r *http.Request) {
 	messages := make([]Message, 0)
 	for rows.Next() {
 		var message Message
-		var createdAt time.Time
-		var modifiedAt time.Time
+		var createdAt, modifiedAt string
 		if err := rows.Scan(&message.ID, &message.Content, &message.ChannelID, &createdAt, &modifiedAt); err != nil {
 			log.Printf("fail: rows.Scan, %v\n", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		message.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
+		message.ModifiedAt, _ = time.Parse("2006-01-02 15:04:05", modifiedAt)
 
 		messages = append(messages, message)
 	}
