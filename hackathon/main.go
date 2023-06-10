@@ -130,37 +130,48 @@ func editMessage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Methods", "GET, PUT, POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
-	var message Message
-	err := json.NewDecoder(r.Body).Decode(&message)
-	if err != nil {
-		log.Printf("fail: json.NewDecoder, %v\n", err)
+	switch r.Method {
+	case http.MethodOptions:
+		w.Header()
+
+	case http.MethodPost:
+		var message Message
+		err := json.NewDecoder(r.Body).Decode(&message)
+		if err != nil {
+			log.Printf("fail: json.NewDecoder, %v\n", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if message.ID == "" {
+			log.Println("fail: id is empty")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if message.Content == "" {
+			log.Println("fail: content is empty")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		message.ModifiedAt = time.Now()
+
+		_, err = db.Exec("UPDATE message SET content = ?, modified_at = ? WHERE id = ?",
+			message.Content, message.ModifiedAt, message.ID)
+		if err != nil {
+			log.Printf("fail: db.Exec, %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+
+	default:
+		log.Printf("fail: HTTP Method is %s\n", r.Method)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
-	if message.ID == "" {
-		log.Println("fail: id is empty")
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	if message.Content == "" {
-		log.Println("fail: content is empty")
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	message.ModifiedAt = time.Now()
-
-	_, err = db.Exec("UPDATE message SET content = ?, modified_at = ? WHERE id = ?",
-		message.Content, message.ModifiedAt, message.ID)
-	if err != nil {
-		log.Printf("fail: db.Exec, %v\n", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
 }
 
 func deleteMessage(w http.ResponseWriter, r *http.Request) {
