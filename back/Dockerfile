@@ -1,5 +1,11 @@
 FROM golang:1.20.5 as build
-WORKDIR /opt/sandbox-docker-go
+
+WORKDIR /app
+
 COPY . .
-RUN go build -o app main.go
-CMD ["/opt/sandbox-docker-go/app"]
+
+RUN go mod tidy
+
+RUN go build ./cmd/main.go
+
+CMD ["./main"]
