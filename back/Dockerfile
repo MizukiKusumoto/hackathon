@@ -6,6 +6,6 @@ COPY . .
 
 RUN go mod tidy
 
-RUN go build ./cmd/main.go
+RUN go build ./main.go
 
 CMD ["./main"]
