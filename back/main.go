@@ -12,6 +12,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type MessageForGet struct {
