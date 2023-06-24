@@ -78,6 +78,12 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		if message.ChannelId == "" {
+			log.Println("fail: channel_id is empty")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
 		tx, err := db.Begin()
 		if err != nil {
 			log.Printf("fail: db.Begin, %v\n", err)
