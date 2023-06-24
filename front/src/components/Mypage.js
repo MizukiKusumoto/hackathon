@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "../firebase.js";
 import { useNavigate, Navigate } from "react-router-dom";
+import Contents from "./Contents.js";
 
 const Mypage = () => {
   const [user, setUser] = useState("");
@@ -38,26 +39,7 @@ const Mypage = () => {
                 <p>ログイン中のユーザー：{user?.email}{send}</p>
                 <button onClick={logout}>ログアウト</button>
               </header>
-              <main>
-                <ul>
-                  {messages.map((message) => (
-                    <li>{message.content}{!(message.posted == message.fixed) ? <>(編集済み)</> : null}</li>
-                  ))}
-                </ul>
-              </main>
-              <aside>
-                {now ? <p>あなたの現在のチャンネル：{now}</p> : <p>チャンネルを選択してください。</p>}
-                {channels.map((channel) => (
-                  <button onClick={() => setNow(channel)}>{channel}</button>
-                ))}
-              </aside>
-              <footer>
-                {now ? <><textarea
-                onChange={(e) => setSend(e.target.value)}
-                ></textarea>
-                <button>送信</button>
-                </> : null}
-              </footer>
+              <Contents />
             </>
           )}
         </>
