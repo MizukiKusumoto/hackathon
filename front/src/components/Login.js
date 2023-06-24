@@ -33,7 +33,7 @@ const Login = () => {
   });
 
   return (
-    <>
+    <div className="loginContainer">
       {user ? (
         <Navigate to={'/'} />
       ) : (
@@ -63,7 +63,7 @@ const Login = () => {
           </form>
         </>
       )}
-    </>
+    </div>
   );
 };
 

@@ -107,43 +107,47 @@ const Contents = () => {
   };
 
   return (
-    <>
+    <div className="contentsContainer">
+        <aside>
+            {!(nowChannel.id == null) ? <p>現在のチャンネル：{nowChannel.name}</p> : <p>チャンネルを選択してください。</p>}
+            {channels.map((channel) => (
+                <button onClick={() => setNow({ id: channel.id, name: channel.name })}>{channel.name}</button>
+            ))}
+        </aside>
         <main>
             <ul>
                 {!(nowChannel.id == null) ? <>
                     {!(messages.length == 0) ? <>
                         {messages.map((message) => (<>
                             <li>
-                                {message.content}{!(message.created_at == message.modified_at) ? <>(編集済み)</> : null}
-                                <button onClick={() => {setUpdating({id: message.id, now: true }); setUpdated(message.content);}}>編集</button>
+                                <p>{message.content}{!(message.created_at == message.modified_at) ? <>(編集済み)</> : null}</p>
+                                <button className="edit" onClick={() => {setUpdating({id: message.id, now: true }); setUpdated(message.content);}}>編集</button>
                                 <button onClick={() => deleteMessage(message.id)}>削除</button>
                             </li>
-                            {updating.now ? <>{updating.id == message.id ? <><textarea
-                                onChange={(e) => setUpdated(e.target.value)}
-                                >{updatedMessage}</textarea>
-                                <button onClick={() =>updateMessage(updating.id, updatedMessage)}>修正</button>
-                                </> : null
-                            }</> : null}
+                            <div>
+                                {updating.now ? <>{updating.id == message.id ? <><textarea
+                                    value={updatedMessage}
+                                    onChange={(e) => setUpdated(e.target.value)}
+                                    ></textarea>
+                                    <button className="update" onClick={() =>updateMessage(updating.id, updatedMessage)}>修正</button>
+                                    </> : null
+                                }</> : null}
+                            </div>
                         </>))} </> : <li>会話を始めましょう！</li>
                     }</> : null
                 }
             </ul>
+            <>
+                {!(nowChannel.id == null) ? <><textarea
+                    value={postedMessage}
+                    onChange={(e) => setPost(e.target.value)}
+                    ></textarea>
+                    <button className="post" onClick={() =>postMessage(postedMessage, nowChannel.id)}>送信</button>
+                    </> : null
+                }
+            </>
         </main>
-        <aside>
-            {!(nowChannel.id == null) ? <p>あなたの現在のチャンネル：{nowChannel.name}</p> : <p>チャンネルを選択してください。</p>}
-            {channels.map((channel) => (
-                <button onClick={() => setNow({ id: channel.id, name: channel.name })}>{channel.name}</button>
-            ))}
-        </aside>
-        <footer>
-            {!(nowChannel.id == null) ? <><textarea
-                onChange={(e) => setPost(e.target.value)}
-                >{postedMessage}</textarea>
-                <button onClick={() =>postMessage(postedMessage, nowChannel.id)}>送信</button>
-                </> : null
-            }
-        </footer>
-    </>
+    </div>
   );
 };
 

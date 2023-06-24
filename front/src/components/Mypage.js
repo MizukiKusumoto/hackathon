@@ -27,7 +27,7 @@ const Mypage = () => {
   }
 
   return (
-    <>
+    <div className="mypageContainer">
       {!loading && (
         <>
           {!user ? (
@@ -35,8 +35,10 @@ const Mypage = () => {
           ) : (
             <>
               <header>
-                <h1 onClick={() => setMessages([{content: "あ", posted: 0, fixed: 0},{content: "い", posted: 0, fixed: 1}])}>マイページ</h1>
-                <p>ログイン中のユーザー：{user?.email}{send}</p>
+                <div>
+                  <h1 onClick={() => setMessages([{content: "あ", posted: 0, fixed: 0},{content: "い", posted: 0, fixed: 1}])}>マイページ</h1>
+                  <p>ログイン中のユーザー：{user?.email}{send}</p>
+                </div>
                 <button onClick={logout}>ログアウト</button>
               </header>
               <Contents />
@@ -44,7 +46,7 @@ const Mypage = () => {
           )}
         </>
       )}
-    </>
+    </div>
   );
 };
 

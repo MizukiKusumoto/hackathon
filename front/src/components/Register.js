@@ -33,7 +33,7 @@ const Register = () => {
   }, []);
 
   return (
-    <>
+    <div className="registerContainer">
       {user ? (
         <Navigate to={`/`} />
       ) : (
@@ -63,7 +63,7 @@ const Register = () => {
           </form>
         </>
       )}
-    </>
+    </div>
   );
 };
 
