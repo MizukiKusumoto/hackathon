@@ -193,6 +193,24 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
 
 		w.WriteHeader(http.StatusOK)
 
+	case http.MethodDelete:
+		id := r.URL.Query().Get("id")
+		if id == "" {
+			log.Println("fail: id is empty")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		rows, err := db.Query("DELETE FROM message WHERE id = ?", id)
+		if err != nil {
+			log.Printf("fail: db.Query, %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		w.WriteHeader(http.StatusOK)
+
 	default:
 		log.Printf("fail: HTTP Method is %s\n", r.Method)
 		w.WriteHeader(http.StatusBadRequest)
