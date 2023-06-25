@@ -219,7 +219,7 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func channelHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+	w.Header().Set("Access-Control-Allow-Origin", "https://hackathon-fxu5.vercel.app")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	switch r.Method {
